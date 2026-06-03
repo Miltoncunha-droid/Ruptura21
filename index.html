@@ -977,5 +977,52 @@ document.querySelectorAll('.faq-i').forEach(item => {
   });
 });
 </script>
+
+<!-- Meta CAPI via Cloudflare Worker -->
+<script>
+(function() {
+  const WORKER = 'https://meta-capi-ruptura21.netocmilton11.workers.dev/';
+
+  // Pega cookies fbp e fbc do browser
+  function getCookie(name) {
+    const cookies = document.cookie.split(';');
+    for (let c of cookies) {
+      const [k, v] = c.trim().split('=');
+      if (k === name) return decodeURIComponent(v);
+    }
+    return null;
+  }
+
+  // Envia evento para o Worker (CAPI server-side)
+  function sendCAPI(eventName) {
+    const data = {
+      event_name: eventName,
+      event_source_url: window.location.href,
+      client_user_agent: navigator.userAgent,
+      fbp: getCookie('_fbp'),
+      fbc: getCookie('_fbc'),
+    };
+    fetch(WORKER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      keepalive: true,
+    }).catch(() => {});
+  }
+
+  // PageView + ViewContent ao carregar
+  window.addEventListener('load', function() {
+    sendCAPI('PageView');
+    setTimeout(() => sendCAPI('ViewContent'), 500);
+  });
+
+  // InitiateCheckout em todos os botões de compra
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('a[href*="eduzz"]');
+    if (btn) sendCAPI('InitiateCheckout');
+  });
+})();
+</script>
+<!-- End Meta CAPI -->
 </body>
 </html>
